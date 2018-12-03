@@ -1,0 +1,102 @@
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+
+public class sockClient {
+    SocketChannel client;
+    SocketChannel server;
+    boolean flag;
+    long lastData;
+
+    sockClient(SocketChannel c) throws IOException {
+        client = c;
+        client.configureBlocking(false);
+        lastData = System.currentTimeMillis();
+    }
+
+    void newRemoteData() throws IOException {
+        writeData(server, client);
+    }
+
+    private void writeData(SocketChannel remote, SocketChannel client) throws IOException {
+        ByteBuffer buf = ByteBuffer.allocate(1024);
+        // If end of data...
+        if (remote.read(buf) == -1) {
+            System.out.println("Closing Connection");
+            client.close();
+            remote.close();
+            return;
+        }
+        lastData = System.currentTimeMillis();
+        buf.flip();
+        client.write(buf);
+    }
+
+    void newClientData(Selector selector) throws IOException {
+
+        if (!flag) {
+
+            ByteBuffer inbuf = ByteBuffer.allocate(512);
+
+            if (client.read(inbuf) < 1)
+                return;
+            inbuf.flip();
+
+            // read socks header
+
+            // First Byte is VN
+            int ver = inbuf.get();
+            if (ver != 4) {
+                throw new IOException("incorrect version" + ver);
+            }
+
+            // Second Byte is CD
+            int cmd = inbuf.get();
+            if (cmd != 1) {
+                throw new IOException("incorrect CMD");
+            }
+
+            // Byte 3 and 4 are for port
+            final int port = inbuf.getShort();
+
+            // Fetching byte 5 - 8 (using Array of 4 bytes)
+            final byte ip[] = new byte[4];
+            inbuf.get(ip);
+
+            InetAddress remoteAddr = InetAddress.getByAddress(ip);
+
+            StringBuilder username = new StringBuilder();
+            Byte checkUsernameByte = inbuf.get();
+
+            while (checkUsernameByte != 0) {
+                username.append(checkUsernameByte);
+                checkUsernameByte = inbuf.get();
+            }
+
+            server = SocketChannel.open(new InetSocketAddress(remoteAddr, port));
+
+            ByteBuffer out = ByteBuffer.allocate(20);
+            out.put((byte) 0);
+            out.put((byte) (server.isConnected() ? 0x5a : 0x5b));
+            out.putShort((short) port);
+            out.put(remoteAddr.getAddress());
+            out.flip();
+            client.write(out);
+
+            if (!server.isConnected())
+                throw new IOException("connect failed");
+
+            server.configureBlocking(false);
+            server.register(selector, SelectionKey.OP_READ);
+
+            flag = true;
+
+        } else {
+            writeData(client, server);
+        }
+    }
+}
