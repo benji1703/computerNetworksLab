@@ -22,11 +22,19 @@ public class sockClient {
         writeData(server, client);
     }
 
+    private void closeConnectionAfterErr(SocketChannel client) throws IOException {
+        System.out.println("Closing Connection from " +
+                client.getRemoteAddress().toString().split("/")[1]);
+        client.close();
+    }
+
     private void writeData(SocketChannel remote, SocketChannel client) throws IOException {
         ByteBuffer buf = ByteBuffer.allocate(1024);
         // If end of data...
         if (remote.read(buf) == -1) {
-            System.out.println("Closing Connection");
+            System.out.println("Closing Connection from " +
+                    client.getLocalAddress().toString().split("/")[1] +
+                    " to " + client.getRemoteAddress().toString().split("/")[1]);
             client.close();
             remote.close();
             return;
@@ -51,13 +59,17 @@ public class sockClient {
             // First Byte is VN
             int ver = inbuf.get();
             if (ver != 4) {
-                throw new IOException("incorrect version" + ver);
+                System.err.println("Connection error: while parsing request: Unsupported SOCKS protocol" +
+                        "version (got " + ver + ")");
+                closeConnectionAfterErr(client);
+                return;
             }
 
             // Second Byte is CD
             int cmd = inbuf.get();
             if (cmd != 1) {
-                throw new IOException("incorrect CMD");
+                System.err.println("Connection error: while parsing request: CMD \n");
+                return;
             }
 
             // Byte 3 and 4 are for port
@@ -77,6 +89,7 @@ public class sockClient {
                 checkUsernameByte = inbuf.get();
             }
 
+            // Need to wrap with try catch
             server = SocketChannel.open(new InetSocketAddress(remoteAddr, port));
 
             ByteBuffer out = ByteBuffer.allocate(20);
@@ -99,4 +112,5 @@ public class sockClient {
             writeData(client, server);
         }
     }
+
 }

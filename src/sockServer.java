@@ -47,6 +47,9 @@ public class sockServer {
                         if (key.channel() == sockClient.client) {
                             sockClient.newClientData(selector);
                         } else if (key.channel() == sockClient.server) {
+                            System.out.println("Succesfull connection from " +
+                                    sockClient.server.getLocalAddress().toString().split("/")[1] +
+                                    " to " + sockClient.server.getRemoteAddress().toString().split("/")[1]);
                             sockClient.newRemoteData();
                         }
                     }
