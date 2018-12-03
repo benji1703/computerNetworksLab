@@ -10,12 +10,11 @@ public class sockClient {
     SocketChannel client;
     SocketChannel server;
     boolean flag;
-    long lastData;
 
     sockClient(SocketChannel c) throws IOException {
         client = c;
         client.configureBlocking(false);
-        lastData = System.currentTimeMillis();
+        client.socket().setSoTimeout(5000);
     }
 
     void newRemoteData() throws IOException {
@@ -39,7 +38,6 @@ public class sockClient {
             remote.close();
             return;
         }
-        lastData = System.currentTimeMillis();
         buf.flip();
         client.write(buf);
     }
@@ -54,7 +52,7 @@ public class sockClient {
                 return;
             inbuf.flip();
 
-            // read socks header
+            // Read socks header
 
             // First Byte is VN
             int ver = inbuf.get();
@@ -89,8 +87,15 @@ public class sockClient {
                 checkUsernameByte = inbuf.get();
             }
 
-            // Need to wrap with try catch
-            server = SocketChannel.open(new InetSocketAddress(remoteAddr, port));
+            try {
+                server = SocketChannel.open(new InetSocketAddress(remoteAddr, port));
+            }
+            catch (Exception e){
+                System.err.println("Connection error: while connecting to destination: connect timed out");
+                e.printStackTrace();
+                closeConnectionAfterTimeout(client);
+                return;
+            }
 
             ByteBuffer out = ByteBuffer.allocate(20);
             out.put((byte) 0);
@@ -111,6 +116,12 @@ public class sockClient {
         } else {
             writeData(client, server);
         }
+    }
+
+    private void closeConnectionAfterTimeout(SocketChannel client) throws IOException {
+        System.out.println("Closing Connection from " +
+                client.getRemoteAddress().toString().split("/")[1]);
+        client.close();
     }
 
 }

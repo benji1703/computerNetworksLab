@@ -30,15 +30,13 @@ public class sockServer {
             while(keyIterator.hasNext()) {
 
                 SelectionKey key = keyIterator.next();
-                SocketChannel socketChannel = null;
                 if (key.isAcceptable()) {
-                    socketChannel = serverSocketChannel.accept();
+                    SocketChannel socketChannel = serverSocketChannel.accept();
+                    socketChannel.configureBlocking(false);
                     addClient(socketChannel);
                     if (socketChannel != null) {
                         socketChannel.register(selector, SelectionKey.OP_READ);
                     }
-                } else if (key.isConnectable()) {
-                    System.out.println("2");
                 } else if (key.isReadable()) {
                     // There is data to READ!
                     // Read all the clients
