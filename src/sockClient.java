@@ -88,11 +88,11 @@ public class sockClient {
             }
 
             try {
-                server = SocketChannel.open(new InetSocketAddress(remoteAddr, port));
+                server = SocketChannel.open();
+                server.connect(new InetSocketAddress(remoteAddr, port));
             }
             catch (Exception e){
                 System.err.println("Connection error: while connecting to destination: connect timed out");
-                e.printStackTrace();
                 closeConnectionAfterTimeout(client);
                 return;
             }

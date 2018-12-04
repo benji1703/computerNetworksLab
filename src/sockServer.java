@@ -2,6 +2,7 @@
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -10,55 +11,60 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 
-public class sockServer {
+public class sockServer implements Runnable {
 
-    private sockServer() throws IOException {
+    @Override
+    public void run() {
 
-        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.socket().bind(new InetSocketAddress(8080));
-        serverSocketChannel.configureBlocking(false);
-        Selector selector = Selector.open();
-        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        try {
+            ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+            serverSocketChannel.socket().bind(new InetSocketAddress(8080));
+            serverSocketChannel.configureBlocking(false);
+            Selector selector = Selector.open();
+            serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-        while(true){
+            while(true){
 
-            int readyChannels = selector.select();
-            if (readyChannels == 0) continue;
-            Set<SelectionKey> selectedKeys = selector.selectedKeys();
-            Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
+                int readyChannels = selector.selectNow();
+                if (readyChannels == 0) continue;
+                Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
 
-            while(keyIterator.hasNext()) {
+                while(keyIterator.hasNext()) {
 
-                SelectionKey key = keyIterator.next();
-                if (key.isAcceptable()) {
-                    SocketChannel socketChannel = serverSocketChannel.accept();
-                    socketChannel.configureBlocking(false);
-                    addClient(socketChannel);
-                    if (socketChannel != null) {
+                    SelectionKey key = keyIterator.next();
+                    if (key.isAcceptable()) {
+                        SocketChannel socketChannel = serverSocketChannel.accept();
+                        socketChannel.configureBlocking(false);
+                        addClient(socketChannel);
                         socketChannel.register(selector, SelectionKey.OP_READ);
-                    }
-                } else if (key.isReadable()) {
-                    // There is data to READ!
-                    // Read all the clients
-                    for (int i = 0; i < clients.size(); i++) {
-                        sockClient sockClient = clients.get(i);
-                        if (key.channel() == sockClient.client) {
-                            sockClient.newClientData(selector);
-                        } else if (key.channel() == sockClient.server) {
-                            System.out.println("Succesfull connection from " +
-                                    sockClient.server.getLocalAddress().toString().split("/")[1] +
-                                    " to " + sockClient.server.getRemoteAddress().toString().split("/")[1]);
-                            sockClient.newRemoteData();
-                        }
-                    }
-                } else if (key.isWritable()) {
-                    // a channel is ready for writing
-                    System.out.println("4");
-                }
-                keyIterator.remove();
-            }
-        }
 
+
+                    } else if (key.isReadable()) {
+                        // There is data to READ!
+                        // Read all the clients
+                        for (int i = 0; i < clients.size(); i++) {
+                            sockClient sockClient = clients.get(i);
+                            if (key.channel() == sockClient.client) {
+                                sockClient.newClientData(selector);
+                            } else if (key.channel() == sockClient.server) {
+                                System.out.println("Succesfull connection from " +
+                                        sockClient.server.getLocalAddress().toString().split("/")[1] +
+                                        " to " + sockClient.server.getRemoteAddress().toString().split("/")[1]);
+                                sockClient.newRemoteData();
+                            }
+                        }
+                    } else if (key.isWritable()) {
+                        // a channel is ready for writing
+                        System.out.println("4");
+                    }
+                    keyIterator.remove();
+                }
+            }
+        } catch (Exception e)   {
+            e.printStackTrace ();
+            throw new IllegalStateException  (e);
+        }
         // We need to kill on timeout
     }
 
@@ -77,6 +83,7 @@ public class sockServer {
 
 
     public static void main(String[] args) throws IOException {
-        new sockServer();
+        sockServer server = new sockServer();
+        server.run();
     }
 }
