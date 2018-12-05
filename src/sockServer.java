@@ -2,7 +2,6 @@
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -11,28 +10,27 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 
-public class sockServer implements Runnable {
+public class sockServer {
 
-    @Override
-    public void run() {
+    private sockServer() throws IOException {
 
-        try {
             ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
             serverSocketChannel.socket().bind(new InetSocketAddress(8080));
             serverSocketChannel.configureBlocking(false);
             Selector selector = Selector.open();
             serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-            while(true){
+            while (true){
 
                 int readyChannels = selector.selectNow();
                 if (readyChannels == 0) continue;
                 Set<SelectionKey> selectedKeys = selector.selectedKeys();
                 Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
 
-                while(keyIterator.hasNext()) {
-
+                while (keyIterator.hasNext()) {
                     SelectionKey key = keyIterator.next();
+                    keyIterator.remove();
+
                     if (key.isAcceptable()) {
                         SocketChannel socketChannel = serverSocketChannel.accept();
                         socketChannel.configureBlocking(false);
@@ -46,7 +44,8 @@ public class sockServer implements Runnable {
                         for (int i = 0; i < clients.size(); i++) {
                             sockClient sockClient = clients.get(i);
                             if (key.channel() == sockClient.client) {
-                                sockClient.newClientData(selector);
+                                sockClient.selector = selector;
+                                new Thread(sockClient).start();
                             } else if (key.channel() == sockClient.server) {
                                 System.out.println("Succesfull connection from " +
                                         sockClient.server.getLocalAddress().toString().split("/")[1] +
@@ -54,18 +53,9 @@ public class sockServer implements Runnable {
                                 sockClient.newRemoteData();
                             }
                         }
-                    } else if (key.isWritable()) {
-                        // a channel is ready for writing
-                        System.out.println("4");
                     }
-                    keyIterator.remove();
                 }
             }
-        } catch (Exception e)   {
-            e.printStackTrace ();
-            throw new IllegalStateException  (e);
-        }
-        // We need to kill on timeout
     }
 
     private static ArrayList<sockClient> clients = new ArrayList<>();
@@ -77,13 +67,12 @@ public class sockServer implements Runnable {
         if(clients.size() <= 20) {
             clients.add(client);
         } else {
-            // do nothing
+            System.out.println("There is no more empty blabla");
         }
     }
 
 
     public static void main(String[] args) throws IOException {
-        sockServer server = new sockServer();
-        server.run();
+        new sockServer();
     }
 }

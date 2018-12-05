@@ -6,10 +6,20 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
-public class sockClient {
+public class sockClient implements Runnable {
+    Selector selector;
     SocketChannel client;
     SocketChannel server;
     boolean flag;
+
+    @Override
+    public void run() {
+        try {
+            newClientData(selector);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     sockClient(SocketChannel c) throws IOException {
         client = c;
@@ -89,6 +99,7 @@ public class sockClient {
 
             try {
                 server = SocketChannel.open();
+                server.socket().setSoTimeout(500);
                 server.connect(new InetSocketAddress(remoteAddr, port));
             }
             catch (Exception e){
@@ -123,5 +134,6 @@ public class sockClient {
                 client.getRemoteAddress().toString().split("/")[1]);
         client.close();
     }
+
 
 }
