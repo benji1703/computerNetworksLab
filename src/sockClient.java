@@ -17,7 +17,6 @@ public class sockClient implements Runnable {
         try {
             newClientData(selector);
         } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -55,7 +54,6 @@ public class sockClient implements Runnable {
     void newClientData(Selector selector) throws IOException {
 
         if (!flag) {
-
             ByteBuffer inbuf = ByteBuffer.allocate(512);
 
             if (client.read(inbuf) < 1)
@@ -104,7 +102,7 @@ public class sockClient implements Runnable {
             }
             catch (Exception e){
                 System.err.println("Connection error: while connecting to destination: connect timed out");
-                closeConnectionAfterTimeout(client);
+                closeConnectionAfterTimeout(client, server);
                 return;
             }
 
@@ -129,9 +127,10 @@ public class sockClient implements Runnable {
         }
     }
 
-    private void closeConnectionAfterTimeout(SocketChannel client) throws IOException {
+    private void closeConnectionAfterTimeout(SocketChannel client, SocketChannel server) throws IOException {
         System.out.println("Closing Connection from " +
                 client.getRemoteAddress().toString().split("/")[1]);
+        server.close();
         client.close();
     }
 

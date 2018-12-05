@@ -2,10 +2,7 @@
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
@@ -14,29 +11,29 @@ public class sockServer {
 
     private sockServer() throws IOException {
 
-            ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-            serverSocketChannel.socket().bind(new InetSocketAddress(8080));
-            serverSocketChannel.configureBlocking(false);
-            Selector selector = Selector.open();
-            serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.socket().bind(new InetSocketAddress(8080));
+        serverSocketChannel.configureBlocking(false);
+        Selector selector = Selector.open();
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-            while (true){
+        while (true){
 
-                int readyChannels = selector.selectNow();
-                if (readyChannels == 0) continue;
-                Set<SelectionKey> selectedKeys = selector.selectedKeys();
-                Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
+            int readyChannels = selector.selectNow();
+            if (readyChannels == 0) continue;
+            Set<SelectionKey> selectedKeys = selector.selectedKeys();
+            Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
 
-                while (keyIterator.hasNext()) {
-                    SelectionKey key = keyIterator.next();
-                    keyIterator.remove();
+            while (keyIterator.hasNext()) {
+                SelectionKey key = keyIterator.next();
+                keyIterator.remove();
 
+                try {
                     if (key.isAcceptable()) {
                         SocketChannel socketChannel = serverSocketChannel.accept();
                         socketChannel.configureBlocking(false);
                         addClient(socketChannel);
                         socketChannel.register(selector, SelectionKey.OP_READ);
-
 
                     } else if (key.isReadable()) {
                         // There is data to READ!
@@ -54,8 +51,9 @@ public class sockServer {
                             }
                         }
                     }
-                }
+                } catch (CancelledKeyException e){};
             }
+        }
     }
 
     private static ArrayList<sockClient> clients = new ArrayList<>();
