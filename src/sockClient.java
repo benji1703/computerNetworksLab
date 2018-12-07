@@ -24,7 +24,7 @@ public class sockClient implements Runnable {
     sockClient(SocketChannel c) throws IOException {
         client = c;
         client.configureBlocking(false);
-        client.socket().setSoTimeout(5000);
+        client.socket().setSoTimeout(500);
         isFirst = true;
     }
 

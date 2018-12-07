@@ -36,8 +36,6 @@ public class sockServer {
                     else if (key.isAcceptable()) {
                         this.accept(serverSocketChannel, selector);
                     } else if (key.isReadable()) {
-                        // There is data to READ!
-                        // Read all the clients
                         readAllTheClients(selector, key);
                     }
                 } catch (CancelledKeyException e){
