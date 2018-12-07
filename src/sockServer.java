@@ -20,40 +20,43 @@ public class sockServer {
 
         while (true){
 
-            int readyChannels = selector.selectNow();
+            int readyChannels = selector.select();
             if (readyChannels == 0) continue;
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
-            SelectionKey key = null;
 
             while (keyIterator.hasNext()) {
-                key = keyIterator.next();
+                SelectionKey key = keyIterator.next();
                 keyIterator.remove();
 
                 try {
-                    if (key.isAcceptable()) {
-                        SocketChannel socketChannel = serverSocketChannel.accept();
-                        socketChannel.configureBlocking(false);
-                        addClient(socketChannel);
-                        socketChannel.register(selector, SelectionKey.OP_READ);
-
+                    if (!key.isValid()){
+                        continue;
+                    }
+                    else if (key.isAcceptable()) {
+                        this.accept(serverSocketChannel, selector);
                     } else if (key.isReadable()) {
                         // There is data to READ!
                         // Read all the clients
-                        for (int i = 0; i < clients.size(); i++) {
-                            sockClient sockClient = clients.get(i);
-                            if (key.channel() == sockClient.client) {
-                                sockClient.selector = selector;
-                                new Thread(sockClient).start();
-                            } else if (key.channel() == sockClient.server) {
-                                System.out.println("Successful connection from " +
-                                        sockClient.server.getLocalAddress().toString().split("/")[1] +
-                                        " to " + sockClient.server.getRemoteAddress().toString().split("/")[1]);
-                                sockClient.newRemoteData();
-                            }
-                        }
+                        readAllTheClients(selector, key);
                     }
-                } catch (CancelledKeyException e){};
+                } catch (CancelledKeyException e){
+                    System.err.println("CancelledKeyException");
+                }
+            }
+        }
+    }
+
+    private void readAllTheClients(Selector selector, SelectionKey key) throws IOException {
+        for (sockClient sockClient : clients) {
+            if (key.channel() == sockClient.client) {
+                sockClient.selector = selector;
+                new Thread(sockClient).start();
+            } else if (key.channel() == sockClient.server) {
+                System.out.println("Successful connection from " +
+                        sockClient.server.getLocalAddress().toString().split("/")[1] +
+                        " to " + sockClient.server.getRemoteAddress().toString().split("/")[1]);
+                sockClient.newRemoteData();
             }
         }
     }
@@ -71,6 +74,12 @@ public class sockServer {
         }
     }
 
+    private void accept(ServerSocketChannel serverSocketChannel, Selector selector) throws IOException {
+        SocketChannel socketChannel = serverSocketChannel.accept();
+        socketChannel.configureBlocking(false);
+        addClient(socketChannel);
+        socketChannel.register(selector, SelectionKey.OP_READ);
+    }
 
     public static void main(String[] args) throws IOException {
         new sockServer();

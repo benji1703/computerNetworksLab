@@ -10,13 +10,14 @@ public class sockClient implements Runnable {
     Selector selector;
     SocketChannel client;
     SocketChannel server;
-    boolean flag;
+    private boolean flag;
+    private boolean isFirst;
 
     @Override
     public void run() {
         try {
             newClientData(selector);
-        } catch (IOException e) {
+        } catch (IOException ignored) {
         }
     }
 
@@ -24,6 +25,7 @@ public class sockClient implements Runnable {
         client = c;
         client.configureBlocking(false);
         client.socket().setSoTimeout(5000);
+        isFirst = true;
     }
 
     void newRemoteData() throws IOException {
@@ -39,7 +41,8 @@ public class sockClient implements Runnable {
     private void writeData(SocketChannel remote, SocketChannel client) throws IOException {
         ByteBuffer buf = ByteBuffer.allocate(1024);
         // If end of data...
-        if (remote.read(buf) == -1) {
+        if (remote.read(buf) == -1 && isFirst) {
+            isFirst = false;
             System.out.println("Closing Connection from " +
                     client.getLocalAddress().toString().split("/")[1] +
                     " to " + client.getRemoteAddress().toString().split("/")[1]);
@@ -51,7 +54,7 @@ public class sockClient implements Runnable {
         client.write(buf);
     }
 
-    void newClientData(Selector selector) throws IOException {
+    private void newClientData(Selector selector) throws IOException {
 
         if (!flag) {
             ByteBuffer inbuf = ByteBuffer.allocate(512);
@@ -84,18 +87,10 @@ public class sockClient implements Runnable {
             final int port = inbuf.getShort();
 
             // Fetching byte 5 - 8 (using Array of 4 bytes)
-            final byte ip[] = new byte[4];
+            final byte[] ip = new byte[4];
             inbuf.get(ip);
 
             InetAddress remoteAddr = InetAddress.getByAddress(ip);
-
-            StringBuilder username = new StringBuilder();
-            Byte checkUsernameByte = inbuf.get();
-
-            while (checkUsernameByte != 0) {
-                username.append(checkUsernameByte);
-                checkUsernameByte = inbuf.get();
-            }
 
             // For both CONNECT and BIND operations, the server sets a time limit
             // (2 minutes in current CSTC implementation) for the establishment of its
@@ -110,7 +105,7 @@ public class sockClient implements Runnable {
             }
             catch (Exception e){
                 System.err.println("Connection error: while connecting to destination: connect timed out");
-                closeConnectionAfterTimeout(client, server);
+                closeConnectionAfterTimeout();
                 return;
             }
 
@@ -141,10 +136,9 @@ public class sockClient implements Runnable {
         }
     }
 
-    private void closeConnectionAfterTimeout(SocketChannel client, SocketChannel server) throws IOException {
+    private void closeConnectionAfterTimeout() throws IOException {
         System.out.println("Closing Connection from " +
                 client.getRemoteAddress().toString().split("/")[1]);
-        server.close();
         client.close();
     }
 }
