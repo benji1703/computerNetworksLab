@@ -60,6 +60,8 @@ public class sockClient implements Runnable {
                 return;
             inbuf.flip();
 
+            //  https://www.openssh.com/txt/socks4.protocol
+
             // Read socks header
 
             // First Byte is VN
@@ -95,6 +97,12 @@ public class sockClient implements Runnable {
                 checkUsernameByte = inbuf.get();
             }
 
+            // For both CONNECT and BIND operations, the server sets a time limit
+            // (2 minutes in current CSTC implementation) for the establishment of its
+            // connection with the application server. If the connection is still not
+            // establiched when the time limit expires, the server closes its connection
+            // to the client and gives up.
+
             try {
                 server = SocketChannel.open();
                 server.socket().setSoTimeout(500);
@@ -107,9 +115,15 @@ public class sockClient implements Runnable {
             }
 
             ByteBuffer out = ByteBuffer.allocate(20);
+            // VN is the version of the reply code and should be 0. CD is the result
+            // code with one of the following values:
             out.put((byte) 0);
+            // 90: request granted
+            // 91: request rejected or failed
             out.put((byte) (server.isConnected() ? 0x5a : 0x5b));
+            // DSTPORT
             out.putShort((short) port);
+            // DSTIP
             out.put(remoteAddr.getAddress());
             out.flip();
             client.write(out);
@@ -133,6 +147,4 @@ public class sockClient implements Runnable {
         server.close();
         client.close();
     }
-
-
 }

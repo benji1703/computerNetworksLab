@@ -13,6 +13,7 @@ public class sockServer {
 
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().bind(new InetSocketAddress(8080));
+        serverSocketChannel.socket().setSoTimeout(500);
         serverSocketChannel.configureBlocking(false);
         Selector selector = Selector.open();
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -23,9 +24,10 @@ public class sockServer {
             if (readyChannels == 0) continue;
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
+            SelectionKey key = null;
 
             while (keyIterator.hasNext()) {
-                SelectionKey key = keyIterator.next();
+                key = keyIterator.next();
                 keyIterator.remove();
 
                 try {
@@ -44,7 +46,7 @@ public class sockServer {
                                 sockClient.selector = selector;
                                 new Thread(sockClient).start();
                             } else if (key.channel() == sockClient.server) {
-                                System.out.println("Succesfull connection from " +
+                                System.out.println("Successful connection from " +
                                         sockClient.server.getLocalAddress().toString().split("/")[1] +
                                         " to " + sockClient.server.getRemoteAddress().toString().split("/")[1]);
                                 sockClient.newRemoteData();
