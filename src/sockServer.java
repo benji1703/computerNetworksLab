@@ -48,7 +48,7 @@ public class sockServer {
         Iterator<sockClient> iter = clients.iterator();
         while (iter.hasNext()) {
             sockClient sockClient = iter.next();
-            removeEmptyClients(iter, sockClient);
+//            removeEmptyClients(iter, sockClient);
             if (key.channel() == sockClient.client) {
                 setSelectorAndStartThread(selector, sockClient);
             } else if (key.channel() == sockClient.server) {
@@ -72,13 +72,22 @@ public class sockServer {
     private static ArrayList<sockClient> clients = new ArrayList<>();
 
     private void addClient(SocketChannel socketChannel) throws IOException {
+        iterOverClientAndClean();
         sockClient client;
         client = new sockClient(socketChannel);
-        // No more than 20! (This is 21 since the first is never removed when checked - Implementation choice...)
-        if(clients.size() <= 21) {
+        // No more than 20!
+        if(clients.size() < 20) {
             clients.add(client);
         } else {
             System.out.println("There is no more empty Slots - Retry later.");
+        }
+    }
+
+    private void iterOverClientAndClean() {
+        Iterator<sockClient> iter = clients.iterator();
+        while (iter.hasNext()) {
+            sockClient client = iter.next();
+            removeEmptyClients(iter, client);
         }
     }
 
