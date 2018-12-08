@@ -32,11 +32,10 @@ public class sockServer {
                 try {
                     if (!key.isValid()){
                         continue;
-                    }
-                    else if (key.isAcceptable()) {
+                    } else if (key.isAcceptable()) {
                         this.accept(serverSocketChannel, selector);
                     } else if (key.isReadable()) {
-                        readAllTheClients(selector, key);
+                        readAndCleanAllTheClients(selector, key);
                     }
                 } catch (CancelledKeyException e){
                     System.err.println("CancelledKeyException");
@@ -45,18 +44,29 @@ public class sockServer {
         }
     }
 
-    private void readAllTheClients(Selector selector, SelectionKey key) throws IOException {
-        for (sockClient sockClient : clients) {
+    private void readAndCleanAllTheClients(Selector selector, SelectionKey key) throws IOException {
+        Iterator<sockClient> iter = clients.iterator();
+        while (iter.hasNext()) {
+            sockClient sockClient = iter.next();
+            removeEmptyClients(iter, sockClient);
             if (key.channel() == sockClient.client) {
-                sockClient.selector = selector;
-                new Thread(sockClient).start();
+                setSelectorAndStartThread(selector, sockClient);
             } else if (key.channel() == sockClient.server) {
-                System.out.println("Successful connection from " +
-                        sockClient.server.getLocalAddress().toString().split("/")[1] +
-                        " to " + sockClient.server.getRemoteAddress().toString().split("/")[1]);
+                printSuccessfulConnection(sockClient);
                 sockClient.newRemoteData();
             }
         }
+    }
+
+    private void printSuccessfulConnection(sockClient sockClient) throws IOException {
+        System.out.println("Successful connection from " +
+                sockClient.server.getLocalAddress().toString().split("/")[1] +
+                " to " + sockClient.server.getRemoteAddress().toString().split("/")[1]);
+    }
+
+    private void setSelectorAndStartThread(Selector selector, sockClient sockClient) {
+        sockClient.selector = selector;
+        new Thread(sockClient).start();
     }
 
     private static ArrayList<sockClient> clients = new ArrayList<>();
@@ -64,11 +74,19 @@ public class sockServer {
     private void addClient(SocketChannel socketChannel) throws IOException {
         sockClient client;
         client = new sockClient(socketChannel);
-        // No more than 20!
-        if(clients.size() <= 20) {
+        // No more than 20! (This is 21 since the first is never removed when checked - Implementation choice...)
+        if(clients.size() <= 21) {
             clients.add(client);
         } else {
-            System.out.println("There is no more empty blabla");
+            System.out.println("There is no more empty Slots - Retry later.");
+        }
+    }
+
+    private void removeEmptyClients(Iterator<sockClient> iter, sockClient sockClient) {
+        if (sockClient.server != null && sockClient.client != null) {
+            if (!sockClient.server.isConnected() && !sockClient.client.isConnected()) {
+                iter.remove();
+            }
         }
     }
 
