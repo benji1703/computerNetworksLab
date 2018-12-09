@@ -3,9 +3,7 @@
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 public class sockServer {
 
@@ -35,7 +33,7 @@ public class sockServer {
                     } else if (key.isAcceptable()) {
                         this.accept(serverSocketChannel, selector);
                     } else if (key.isReadable()) {
-                        readAndCleanAllTheClients(selector, key);
+                        readAllTheClients(selector, key);
                     }
                 } catch (CancelledKeyException e){
                     System.err.println("CancelledKeyException");
@@ -44,11 +42,10 @@ public class sockServer {
         }
     }
 
-    private void readAndCleanAllTheClients(Selector selector, SelectionKey key) throws IOException {
+    private void readAllTheClients(Selector selector, SelectionKey key) throws IOException {
         Iterator<sockClient> iter = clients.iterator();
         while (iter.hasNext()) {
             sockClient sockClient = iter.next();
-//            removeEmptyClients(iter, sockClient);
             if (key.channel() == sockClient.client) {
                 setSelectorAndStartThread(selector, sockClient);
             } else if (key.channel() == sockClient.server) {

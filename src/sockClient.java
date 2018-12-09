@@ -2,9 +2,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 
 public class sockClient implements Runnable {
     Selector selector;
@@ -32,16 +30,10 @@ public class sockClient implements Runnable {
         writeData(server, client);
     }
 
-    private void closeConnectionAfterErr(SocketChannel client) throws IOException {
-        System.out.println("Closing Connection from " +
-                client.getRemoteAddress().toString().split("/")[1]);
-        client.close();
-    }
-
     private void writeData(SocketChannel remote, SocketChannel client) throws IOException {
-        ByteBuffer buf = ByteBuffer.allocate(1024);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
         // If end of data...
-        if (remote.read(buf) == -1 && isFirst) {
+        if (remote.read(byteBuffer) == -1 && isFirst) {
             isFirst = false;
             System.out.println("Closing Connection from " +
                     client.getLocalAddress().toString().split("/")[1] +
@@ -50,45 +42,46 @@ public class sockClient implements Runnable {
             remote.close();
             return;
         }
-        buf.flip();
-        client.write(buf);
+        byteBuffer.flip();
+        client.write(byteBuffer);
     }
 
     private void newClientData(Selector selector) throws IOException {
 
         if (!flag) {
-            ByteBuffer inbuf = ByteBuffer.allocate(512);
+            ByteBuffer byteBuffer = ByteBuffer.allocate(512);
 
-            if (client.read(inbuf) < 1)
+            if (client.read(byteBuffer) < 1)
                 return;
-            inbuf.flip();
+            byteBuffer.flip();
 
             //  https://www.openssh.com/txt/socks4.protocol
 
             // Read socks header
 
             // First Byte is VN
-            int ver = inbuf.get();
+            int ver = byteBuffer.get();
             if (ver != 4) {
                 System.err.println("Connection error: while parsing request: Unsupported SOCKS protocol" +
                         "version (got " + ver + ")");
-                closeConnectionAfterErr(client);
+                closeConnectionAfterErr();
                 return;
             }
 
             // Second Byte is CD
-            int cmd = inbuf.get();
+            int cmd = byteBuffer.get();
             if (cmd != 1) {
                 System.err.println("Connection error: while parsing request: CMD \n");
+                closeConnectionAfterErr();
                 return;
             }
 
             // Byte 3 and 4 are for port
-            final int port = inbuf.getShort();
+            final int port = byteBuffer.getShort();
 
             // Fetching byte 5 - 8 (using Array of 4 bytes)
             final byte[] ip = new byte[4];
-            inbuf.get(ip);
+            byteBuffer.get(ip);
 
             InetAddress remoteAddr = InetAddress.getByAddress(ip);
 
@@ -105,7 +98,7 @@ public class sockClient implements Runnable {
             }
             catch (Exception e){
                 System.err.println("Connection error: while connecting to destination: connect timed out");
-                closeConnectionAfterTimeout();
+                closeConnectionAfterErr();
                 return;
             }
 
@@ -136,7 +129,7 @@ public class sockClient implements Runnable {
         }
     }
 
-    private void closeConnectionAfterTimeout() throws IOException {
+    private void closeConnectionAfterErr() throws IOException {
         System.out.println("Closing Connection from " +
                 client.getRemoteAddress().toString().split("/")[1]);
         client.close();
