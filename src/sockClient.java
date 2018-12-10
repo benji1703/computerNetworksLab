@@ -62,8 +62,8 @@ public class sockClient implements Runnable {
     }
 
     private String manipulateStringAndExtractAuthorization(String s) {
-        String authorizationEncoded = "";
-        String host = "";
+        String authorizationEncoded;
+        String host;
 
         int startIndexAuthorization = s.indexOf("Authorization: Basic");
         int endIndexAuthorization = s.indexOf("\r\n", startIndexAuthorization);
@@ -85,11 +85,11 @@ public class sockClient implements Runnable {
         return combineHostAndAuthorization(autorizationDecoded, host);
     }
 
-    public String combineHostAndAuthorization (String autorizationDecoded, String host){
+    private String combineHostAndAuthorization(String autorizationDecoded, String host){
         return "http://" + autorizationDecoded + "@" + host +"/";
     }
 
-    public static ByteBuffer clone (ByteBuffer original) {
+    private static ByteBuffer clone(ByteBuffer original) {
         ByteBuffer clone = ByteBuffer.allocate(original.capacity());
         original.rewind(); //copy from the beginning
         clone.put(original);
@@ -98,6 +98,7 @@ public class sockClient implements Runnable {
         return clone;
     }
 
+    @SuppressWarnings("InfiniteLoopStatement")
     private void newClientData(Selector selector) throws IOException {
 
         if (!flag) {
@@ -136,7 +137,7 @@ public class sockClient implements Runnable {
             final byte[] ip = new byte[4];
             byteBuffer.get(ip);
 
-            InetAddress remoteAddr = null;
+            InetAddress remoteAddr;
             // BONUS!!!
             // https://www.openssh.com/txt/socks4a.protocol
             // A server using protocol 4A must check the DSTIP in the request packet.
@@ -152,7 +153,7 @@ public class sockClient implements Runnable {
                         byteBuffer.get(buf);
                         builder.append((char) buf[0]);
                     }
-                } catch (BufferUnderflowException e) {
+                } catch (BufferUnderflowException ignored) {
                 }
                 builder.insert(0, "www.");
                 String value = builder.toString().replace("\u0000", "");
