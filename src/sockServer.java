@@ -5,9 +5,9 @@ import java.net.InetSocketAddress;
 import java.nio.channels.*;
 import java.util.*;
 
-public class sockServer {
+class sockServer {
 
-    private sockServer() throws IOException {
+    sockServer() throws IOException {
 
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().bind(new InetSocketAddress(8080));
@@ -110,7 +110,4 @@ public class sockServer {
         socketChannel.register(selector, SelectionKey.OP_READ);
     }
 
-    public static void main(String[] args) throws IOException {
-        new sockServer();
-    }
 }
