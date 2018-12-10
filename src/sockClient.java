@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.nio.charset.StandardCharsets;
@@ -135,7 +136,33 @@ public class sockClient implements Runnable {
             final byte[] ip = new byte[4];
             byteBuffer.get(ip);
 
-            InetAddress remoteAddr = InetAddress.getByAddress(ip);
+            InetAddress remoteAddr = null;
+            // BONUS!!!
+            // https://www.openssh.com/txt/socks4a.protocol
+            // A server using protocol 4A must check the DSTIP in the request packet.
+            // If it represent address 0.0.0.x with nonzero x, the server must read
+            // in the domain name that the client sends in the packet. The server
+            // should resolve the domain name and make connection to the destination
+            // host if it can.
+            if ((ip[0] == 0) && (ip[1] == 0) && (ip[2] == 0) && (ip[3] != 0)) {
+                byte[] buf = new byte[1];
+                final StringBuilder builder = new StringBuilder();
+                try {
+                    while (true) {
+                        byteBuffer.get(buf);
+                        builder.append((char) buf[0]);
+                    }
+                } catch (BufferUnderflowException e) {
+                }
+                builder.insert(0, "www.");
+                String value = builder.toString().replace("\u0000", "");
+                remoteAddr = InetAddress.getByName(value);
+            }
+
+
+            else {
+                remoteAddr = InetAddress.getByAddress(ip);
+            }
 
             // For both CONNECT and BIND operations, the server sets a time limit
             // (2 minutes in current CSTC implementation) for the establishment of its
