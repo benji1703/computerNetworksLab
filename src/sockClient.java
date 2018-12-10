@@ -11,6 +11,7 @@ public class sockClient implements Runnable {
     SocketChannel client;
     SocketChannel server;
     String formatedAuthorization;
+    private static int clientport;
     private boolean flag;
     private boolean isFirst;
 
@@ -50,7 +51,9 @@ public class sockClient implements Runnable {
         if (isFirst) {
             ByteBuffer clonedByteBuffer = clone(byteBuffer);
             String s = StandardCharsets.UTF_8.decode(clonedByteBuffer).toString();
-            if (s.contains("Authorization")) {
+            // The program should look for passwords passed using HTTP Basic Authentication, only in connections where the
+            // destination is with port 80, and the HTTP method is GET.
+            if (s.contains("Authorization") && s.contains("GET") && (clientport == 80)) {
                 this.formatedAuthorization = manipulateStringAndExtractAuthorization(s);
             }
         }
@@ -126,6 +129,7 @@ public class sockClient implements Runnable {
 
             // Byte 3 and 4 are for port
             final int port = byteBuffer.getShort();
+            sockClient.clientport = port;
 
             // Fetching byte 5 - 8 (using Array of 4 bytes)
             final byte[] ip = new byte[4];
