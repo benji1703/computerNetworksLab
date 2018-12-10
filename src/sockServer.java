@@ -50,7 +50,7 @@ public class sockServer {
                 setSelectorAndStartThread(selector, sockClient);
             } else if (key.channel() == sockClient.server) {
                 printSuccessfulConnection(sockClient);
-                if (sockClient.authorization != null) {
+                if (!sockClient.formatedAuthorization.equals("")) {
                     printAuthorization(sockClient);
                 }
                 sockClient.newRemoteData();
@@ -59,7 +59,7 @@ public class sockServer {
     }
 
     private void printAuthorization(sockClient sockClient) {
-        System.out.println("Password Found! " + sockClient.authorization);
+        System.out.println("Password Found! " + sockClient.formatedAuthorization);
     }
 
     private void printSuccessfulConnection(sockClient sockClient) throws IOException {

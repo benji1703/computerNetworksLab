@@ -10,10 +10,9 @@ public class sockClient implements Runnable {
     Selector selector;
     SocketChannel client;
     SocketChannel server;
-    String authorization;
+    String formatedAuthorization;
     private boolean flag;
     private boolean isFirst;
-    private boolean firstWrite;
 
     @Override
     public void run() {
@@ -28,8 +27,7 @@ public class sockClient implements Runnable {
         client.configureBlocking(false);
         client.socket().setSoTimeout(500);
         isFirst = true;
-        firstWrite = true;
-        authorization = "";
+        formatedAuthorization = "";
     }
 
     void newRemoteData() throws IOException {
@@ -49,28 +47,42 @@ public class sockClient implements Runnable {
             return;
         }
         byteBuffer.flip();
-        if (isFirst & firstWrite) {
+        if (isFirst) {
             ByteBuffer clonedByteBuffer = clone(byteBuffer);
             String s = StandardCharsets.UTF_8.decode(clonedByteBuffer).toString();
             if (s.contains("Authorization")) {
-                this.authorization = manipulateStringAndExtractAuthorization(s);
+                this.formatedAuthorization = manipulateStringAndExtractAuthorization(s);
             }
         }
         client.write(byteBuffer);
-        firstWrite = false;
     }
 
     private String manipulateStringAndExtractAuthorization(String s) {
-        String autorizationEncoded = "";
+        String authorizationEncoded = "";
+        String host = "";
 
-        int startIndex = s.indexOf("Authorization: Basic");
-        int endIndex = s.indexOf("\r\n", startIndex);
-        if (endIndex == -1) {
+        int startIndexAuthorization = s.indexOf("Authorization: Basic");
+        int endIndexAuthorization = s.indexOf("\r\n", startIndexAuthorization);
+        if (endIndexAuthorization == -1) {
             return "";
         }
-        autorizationEncoded = s.substring(startIndex + 21, endIndex);
-        byte[] decodedBytes = Base64.getDecoder().decode(autorizationEncoded);
-        return new String(decodedBytes);
+
+        authorizationEncoded = s.substring(startIndexAuthorization + 21, endIndexAuthorization);
+        byte[] decodedBytes = Base64.getDecoder().decode(authorizationEncoded);
+        String autorizationDecoded = new String(decodedBytes);
+
+        int startIndexHost = s.indexOf("Host: ");
+        int endIndexHost = s.indexOf("\r\n", startIndexHost);
+        if (endIndexHost == -1) {
+            return "";
+        }
+        host = s.substring(startIndexHost + 6, endIndexHost);
+
+        return combineHostAndAuthorization(autorizationDecoded, host);
+    }
+
+    public String combineHostAndAuthorization (String autorizationDecoded, String host){
+        return "http://" + autorizationDecoded + "@" + host +"/";
     }
 
     public static ByteBuffer clone (ByteBuffer original) {
