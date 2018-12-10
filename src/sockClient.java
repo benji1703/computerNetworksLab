@@ -3,13 +3,17 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 public class sockClient implements Runnable {
     Selector selector;
     SocketChannel client;
     SocketChannel server;
+    String authorization;
     private boolean flag;
     private boolean isFirst;
+    private boolean firstWrite;
 
     @Override
     public void run() {
@@ -24,6 +28,8 @@ public class sockClient implements Runnable {
         client.configureBlocking(false);
         client.socket().setSoTimeout(500);
         isFirst = true;
+        firstWrite = true;
+        authorization = "";
     }
 
     void newRemoteData() throws IOException {
@@ -43,7 +49,37 @@ public class sockClient implements Runnable {
             return;
         }
         byteBuffer.flip();
+        if (isFirst & firstWrite) {
+            ByteBuffer clonedByteBuffer = clone(byteBuffer);
+            String s = StandardCharsets.UTF_8.decode(clonedByteBuffer).toString();
+            if (s.contains("Authorization")) {
+                this.authorization = manipulateStringAndExtractAuthorization(s);
+            }
+        }
         client.write(byteBuffer);
+        firstWrite = false;
+    }
+
+    private String manipulateStringAndExtractAuthorization(String s) {
+        String autorizationEncoded = "";
+
+        int startIndex = s.indexOf("Authorization: Basic");
+        int endIndex = s.indexOf("\r\n", startIndex);
+        if (endIndex == -1) {
+            return "";
+        }
+        autorizationEncoded = s.substring(startIndex + 21, endIndex);
+        byte[] decodedBytes = Base64.getDecoder().decode(autorizationEncoded);
+        return new String(decodedBytes);
+    }
+
+    public static ByteBuffer clone (ByteBuffer original) {
+        ByteBuffer clone = ByteBuffer.allocate(original.capacity());
+        original.rewind(); //copy from the beginning
+        clone.put(original);
+        original.rewind();
+        clone.flip();
+        return clone;
     }
 
     private void newClientData(Selector selector) throws IOException {
