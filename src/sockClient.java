@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -151,16 +150,11 @@ public class sockClient implements Runnable {
             if ((ip[0] == 0) && (ip[1] == 0) && (ip[2] == 0) && (ip[3] != 0)) {
                 byte[] buf = new byte[1];
                 final StringBuilder builder = new StringBuilder();
-                try {
-                    while (true) {
+                    while (byteBuffer.remaining() > 0) {
                         byteBuffer.get(buf);
-                        builder.append((char) buf[0]);
+                        if ((buf[0] != 0)) builder.append((char) buf[0]); //Removing the NULL Terminating byte
                     }
-                } catch (BufferUnderflowException ignored) {
-                }
-                builder.insert(0, "www.");
-                String value = builder.toString().replace("\u0000", "");
-                remoteAddr = InetAddress.getByName(value);
+                remoteAddr = InetAddress.getByName(builder.toString());
             }
 
 
