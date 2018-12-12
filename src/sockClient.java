@@ -3,7 +3,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.nio.channels.*;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -46,6 +48,8 @@ public class sockClient implements Runnable {
                     " to " + client.getRemoteAddress().toString().split("/")[1]);
             client.close();
             remote.close();
+            this.client.close();
+            this.server.close();
             return;
         }
         byteBuffer.flip();
@@ -98,7 +102,6 @@ public class sockClient implements Runnable {
         return clone;
     }
 
-    @SuppressWarnings("InfiniteLoopStatement")
     private void newClientData(Selector selector) throws IOException {
 
         if (!flag) {
@@ -212,6 +215,7 @@ public class sockClient implements Runnable {
     private void closeConnectionAfterErr() throws IOException {
         System.out.println("Closing Connection from " +
                 client.getRemoteAddress().toString().split("/")[1]);
+        server.close();
         client.close();
     }
 }
