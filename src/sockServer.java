@@ -1,4 +1,4 @@
-// http://tutorials.jenkov.com/java-nio/socketchannel.html
+// http://tutorials.jenkov.com/java-nio/index.html
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -15,12 +15,19 @@ class sockServer {
         serverSocketChannel.socket().bind(new InetSocketAddress(8080));
         serverSocketChannel.socket().setSoTimeout(500);
         serverSocketChannel.configureBlocking(false);
+        // Why Use a Selector?
+        // The advantage of using just a single thread to handle multiple channels is that you need less threads to
+        // handle the channels. Actually, you can use just one thread to handle all of your channels. Switching
+        // between threads is expensive for an operating system, and each thread takes up some resources (memory)
+        // in the operating system too. Therefore, the less threads you use, the better.
         Selector selector = Selector.open();
+        // Register the Channel to "ACCEPT"
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         while (true){
 
-            int readyChannels = selector.select();
+            // selectNow() doesn't block at all. It returns immediately with whatever channels are ready.
+            int readyChannels = selector.selectNow();
             if (readyChannels == 0) continue;
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> keyIterator = selectedKeys.iterator();

@@ -37,6 +37,7 @@ public class sockClient implements Runnable {
         writeData(server, client);
     }
 
+    // TODO: Consider the use of Java NIO Scatter / Gather
     private void writeData(SocketChannel remote, SocketChannel client) throws IOException {
         ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
         // If end of data...
@@ -102,6 +103,7 @@ public class sockClient implements Runnable {
     private void newClientData(Selector selector) throws IOException {
 
         if (!flag) {
+            // TODO: Ask about allocation size of Request and Response
             ByteBuffer byteBuffer = ByteBuffer.allocate(512);
 
             if (client.read(byteBuffer) < 1)
@@ -155,10 +157,7 @@ public class sockClient implements Runnable {
                 remoteAddr = InetAddress.getByName(builder.toString());
             }
 
-
-            else {
-                remoteAddr = InetAddress.getByAddress(ip);
-            }
+            else remoteAddr = InetAddress.getByAddress(ip);
 
             // For both CONNECT and BIND operations, the server sets a time limit
             // (2 minutes in current CSTC implementation) for the establishment of its
@@ -181,8 +180,8 @@ public class sockClient implements Runnable {
             // VN is the version of the reply code and should be 0. CD is the result
             // code with one of the following values:
             out.put((byte) 0);
-            // 90: request granted
-            // 91: request rejected or failed
+            // 90 (0x5a): request granted
+            // 91 (0x5b): request rejected or failed
             out.put((byte) (server.isConnected() ? 0x5a : 0x5b));
             // DSTPORT
             out.putShort((short) port);
