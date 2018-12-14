@@ -9,6 +9,9 @@ import java.util.Set;
 
 class sockServer {
 
+
+    private String previousRemoteAdress = "";
+
     sockServer() throws IOException {
 
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
@@ -72,9 +75,13 @@ class sockServer {
     }
 
     private void printSuccessfulConnection(sockClient sockClient) throws IOException {
-        System.out.println("Successful connection from " +
-                sockClient.server.getLocalAddress().toString().split("/")[1] +
-                " to " + sockClient.server.getRemoteAddress().toString().split("/")[1]);
+        String remoteAdress = sockClient.server.getRemoteAddress().toString().split("/")[1];
+        if (!this.previousRemoteAdress.equals(remoteAdress)) {
+            System.out.println("Successful connection from " +
+                    sockClient.server.getLocalAddress().toString().split("/")[1] +
+                    " to " + remoteAdress);
+            this.previousRemoteAdress = remoteAdress;
+        }
     }
 
     private void setSelectorAndStartThread(Selector selector, sockClient sockClient) {

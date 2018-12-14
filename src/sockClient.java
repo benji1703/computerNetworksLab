@@ -39,7 +39,7 @@ public class sockClient implements Runnable {
 
     // TODO: Consider the use of Java NIO Scatter / Gather
     private void writeData(SocketChannel remote, SocketChannel client) throws IOException {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(5000);
         // If end of data...
         if (remote.read(byteBuffer) == -1 && isFirst) {
             isFirst = false;
