@@ -206,7 +206,11 @@ public class sockClient implements Runnable {
     private void closeConnectionAfterErr() throws IOException {
         System.out.println("Closing Connection from " +
                 client.getRemoteAddress().toString().split("/")[1]);
-        this.server.close();
+        try {
+            this.server.close();
+        } catch (Exception ignored) {}
+        try {
         this.client.close();
+        } catch (Exception ignored) {}
     }
 }
