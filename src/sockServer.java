@@ -78,7 +78,7 @@ class sockServer {
         String remoteAdress = sockClient.server.getRemoteAddress().toString().split("/")[1];
         if (!this.previousRemoteAdress.equals(remoteAdress)) {
             System.out.println("Successful connection from " +
-                    sockClient.server.getLocalAddress().toString().split("/")[1] +
+                    sockClient.client.getRemoteAddress().toString().split("/")[1] +
                     " to " + remoteAdress);
             this.previousRemoteAdress = remoteAdress;
         }
