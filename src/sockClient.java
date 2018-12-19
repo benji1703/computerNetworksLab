@@ -44,7 +44,7 @@ public class sockClient implements Runnable {
             isFirst = false;
             System.out.println("Closing Connection from " +
                     this.client.getRemoteAddress().toString().split("/")[1] +
-                    " to " + client.getRemoteAddress().toString().split("/")[1]);
+                    " to " + server.getRemoteAddress().toString().split("/")[1]);
             this.client.close();
             this.server.close();
             return;
