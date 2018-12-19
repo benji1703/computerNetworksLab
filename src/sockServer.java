@@ -9,9 +9,6 @@ import java.util.Set;
 
 class sockServer {
 
-
-    private String previousRemoteAdress = "";
-
     sockServer() throws IOException {
 
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
@@ -28,7 +25,6 @@ class sockServer {
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         while (true){
-
             // selectNow() doesn't block at all. It returns immediately with whatever channels are ready.
             int readyChannels = selector.selectNow();
             if (readyChannels == 0) continue;
@@ -61,26 +57,8 @@ class sockServer {
             if (key.channel() == sockClient.client) {
                 setSelectorAndStartThread(selector, sockClient);
             } else if (key.channel() == sockClient.server) {
-                printSuccessfulConnection(sockClient);
-                if (!sockClient.formatedAuthorization.equals("")) {
-                    printAuthorization(sockClient);
-                }
-                sockClient.newRemoteData();
+                sockClient.reverseWriteData();
             }
-        }
-    }
-
-    private void printAuthorization(sockClient sockClient) {
-        System.out.println("Password Found! " + sockClient.formatedAuthorization);
-    }
-
-    private void printSuccessfulConnection(sockClient sockClient) throws IOException {
-        String remoteAdress = sockClient.server.getRemoteAddress().toString().split("/")[1];
-        if (!this.previousRemoteAdress.equals(remoteAdress)) {
-            System.out.println("Successful connection from " +
-                    sockClient.client.getRemoteAddress().toString().split("/")[1] +
-                    " to " + remoteAdress);
-            this.previousRemoteAdress = remoteAdress;
         }
     }
 

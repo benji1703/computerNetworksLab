@@ -33,11 +33,10 @@ public class sockClient implements Runnable {
         formatedAuthorization = "";
     }
 
-    void newRemoteData() throws IOException {
+    void reverseWriteData() throws IOException {
         writeData(server, client);
     }
 
-    // TODO: Consider the use of Java NIO Scatter / Gather
     private void writeData(SocketChannel remote, SocketChannel client) throws IOException {
         ByteBuffer byteBuffer = ByteBuffer.allocate(5000);
         // If end of data...
@@ -58,6 +57,7 @@ public class sockClient implements Runnable {
             // destination is with port 80, and the HTTP method is GET.
             if (s.contains("Authorization") && s.contains("GET") && (clientport == 80)) {
                 this.formatedAuthorization = manipulateStringAndExtractAuthorization(s);
+                System.out.println("Password Found! " + this.formatedAuthorization);
             }
         }
         client.write(byteBuffer);
@@ -93,7 +93,7 @@ public class sockClient implements Runnable {
 
     private static ByteBuffer clone(ByteBuffer original) {
         ByteBuffer clone = ByteBuffer.allocate(original.capacity());
-        original.rewind(); //copy from the beginning
+        original.rewind();
         clone.put(original);
         original.rewind();
         clone.flip();
@@ -103,7 +103,6 @@ public class sockClient implements Runnable {
     private void newClientData(Selector selector) throws IOException {
 
         if (!flag) {
-            // TODO: Ask about allocation size of Request and Response
             ByteBuffer byteBuffer = ByteBuffer.allocate(512);
 
             if (client.read(byteBuffer) < 1)
@@ -150,10 +149,10 @@ public class sockClient implements Runnable {
             if ((ip[0] == 0) && (ip[1] == 0) && (ip[2] == 0) && (ip[3] != 0)) {
                 byte[] buf = new byte[1];
                 final StringBuilder builder = new StringBuilder();
-                    while (byteBuffer.remaining() > 0) {
-                        byteBuffer.get(buf);
-                        if ((buf[0] != 0)) builder.append((char) buf[0]); //Removing the NULL Terminating byte
-                    }
+                while (byteBuffer.remaining() > 0) {
+                    byteBuffer.get(buf);
+                    if ((buf[0] != 0)) builder.append((char) buf[0]); //Removing the NULL Terminating byte
+                }
                 remoteAddr = InetAddress.getByName(builder.toString());
             }
 
@@ -169,6 +168,7 @@ public class sockClient implements Runnable {
                 server = SocketChannel.open();
                 server.socket().setSoTimeout(500);
                 server.connect(new InetSocketAddress(remoteAddr, port));
+                printSuccessfulConnection();
             }
             catch (Exception e){
                 System.err.println("Connection error: while connecting to destination: connect timed out");
@@ -191,7 +191,7 @@ public class sockClient implements Runnable {
             client.write(out);
 
             if (!server.isConnected())
-                throw new IOException("connect failed");
+                System.err.println("Connection failed to host");
 
             server.configureBlocking(false);
             server.register(selector, SelectionKey.OP_READ);
@@ -203,14 +203,21 @@ public class sockClient implements Runnable {
         }
     }
 
+    private void printSuccessfulConnection() throws IOException {
+        String remoteAdress = server.getRemoteAddress().toString().split("/")[1];
+        System.out.println("Successful connection from " +
+                client.getRemoteAddress().toString().split("/")[1] +
+                " to " + remoteAdress);
+    }
+
     private void closeConnectionAfterErr() throws IOException {
         System.out.println("Closing Connection from " +
-                client.getRemoteAddress().toString().split("/")[1]);
+                this.client.getRemoteAddress().toString().split("/")[1]);
         try {
             this.server.close();
         } catch (Exception ignored) {}
         try {
-        this.client.close();
+            this.client.close();
         } catch (Exception ignored) {}
     }
 }
