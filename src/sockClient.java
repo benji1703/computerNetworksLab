@@ -13,7 +13,7 @@ public class sockClient implements Runnable {
     SocketChannel client;
     SocketChannel server;
     String formatedAuthorization;
-    private static int clientport;
+    private int clientport;
     private boolean flag;
     private boolean isFirst;
 
@@ -132,7 +132,7 @@ public class sockClient implements Runnable {
 
             // Byte 3 and 4 are for port
             final int port = byteBuffer.getShort();
-            sockClient.clientport = port;
+            clientport = port;
 
             // Fetching byte 5 - 8 (using Array of 4 bytes)
             final byte[] ip = new byte[4];
