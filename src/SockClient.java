@@ -8,7 +8,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-public class sockClient implements Runnable {
+public class SockClient implements Runnable {
     Selector selector;
     SocketChannel client;
     SocketChannel server;
@@ -20,12 +20,12 @@ public class sockClient implements Runnable {
     @Override
     public void run() {
         try {
-            newClientData(selector);
+            createNewClient(selector);
         } catch (IOException ignored) {
         }
     }
 
-    sockClient(SocketChannel c) throws IOException {
+    SockClient(SocketChannel c) throws IOException {
         client = c;
         client.configureBlocking(false);
         client.socket().setSoTimeout(500);
@@ -100,7 +100,7 @@ public class sockClient implements Runnable {
         return clone;
     }
 
-    private void newClientData(Selector selector) throws IOException {
+    private void createNewClient (Selector selector) throws IOException {
 
         if (!flag) {
             ByteBuffer byteBuffer = ByteBuffer.allocate(512);
@@ -110,8 +110,6 @@ public class sockClient implements Runnable {
             byteBuffer.flip();
 
             //  https://www.openssh.com/txt/socks4.protocol
-
-            // Read socks header
 
             // First Byte is VN
             int ver = byteBuffer.get();
@@ -130,15 +128,16 @@ public class sockClient implements Runnable {
                 return;
             }
 
-            // Byte 3 and 4 are for port
-            final int port = byteBuffer.getShort();
+            // Byte 3 and 4 are for port (a Short is 2 bytes)
+            int port = byteBuffer.getShort();
             clientport = port;
 
             // Fetching byte 5 - 8 (using Array of 4 bytes)
-            final byte[] ip = new byte[4];
+            byte[] ip = new byte[4];
             byteBuffer.get(ip);
 
             InetAddress remoteAddr;
+
             // BONUS!!!
             // https://www.openssh.com/txt/socks4a.protocol
             // A server using protocol 4A must check the DSTIP in the request packet.
@@ -146,6 +145,7 @@ public class sockClient implements Runnable {
             // in the domain name that the client sends in the packet. The server
             // should resolve the domain name and make connection to the destination
             // host if it can.
+
             if ((ip[0] == 0) && (ip[1] == 0) && (ip[2] == 0) && (ip[3] != 0)) {
                 byte[] buf = new byte[1];
                 final StringBuilder builder = new StringBuilder();
@@ -176,19 +176,20 @@ public class sockClient implements Runnable {
                 return;
             }
 
-            ByteBuffer out = ByteBuffer.allocate(20);
+            // # of bytes is 20
+            ByteBuffer replyPacket = ByteBuffer.allocate(20);
             // VN is the version of the reply code and should be 0. CD is the result
             // code with one of the following values:
-            out.put((byte) 0);
+            replyPacket.put((byte) 0);
             // 90 (0x5a): request granted
             // 91 (0x5b): request rejected or failed
-            out.put((byte) (server.isConnected() ? 0x5a : 0x5b));
+            replyPacket.put((byte) (server.isConnected() ? 0x5a : 0x5b));
             // DSTPORT
-            out.putShort((short) port);
+            replyPacket.putShort((short) port);
             // DSTIP
-            out.put(remoteAddr.getAddress());
-            out.flip();
-            client.write(out);
+            replyPacket.put(remoteAddr.getAddress());
+            replyPacket.flip();
+            client.write(replyPacket);
 
             if (!server.isConnected())
                 System.err.println("Connection failed to host");

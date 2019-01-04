@@ -1,5 +1,3 @@
-// http://tutorials.jenkov.com/java-nio/index.html
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
@@ -7,9 +5,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 
-class sockServer {
+class SockServer {
 
-    sockServer() throws IOException {
+    SockServer() throws IOException {
 
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().bind(new InetSocketAddress(8080));
@@ -51,9 +49,9 @@ class sockServer {
     }
 
     private void readAllTheClients(Selector selector, SelectionKey key) throws IOException {
-        Iterator<sockClient> iter = clients.iterator();
+        Iterator<SockClient> iter = clients.iterator();
         while (iter.hasNext()) {
-            sockClient sockClient = iter.next();
+            SockClient sockClient = iter.next();
             if (key.channel() == sockClient.client) {
                 setSelectorAndStartThread(selector, sockClient);
             } else if (key.channel() == sockClient.server) {
@@ -62,19 +60,19 @@ class sockServer {
         }
     }
 
-    private void setSelectorAndStartThread(Selector selector, sockClient sockClient) {
+    private void setSelectorAndStartThread(Selector selector, SockClient sockClient) {
         sockClient.selector = selector;
         new Thread(sockClient).start();
     }
 
-    private static ArrayList<sockClient> clients = new ArrayList<>();
+    private static ArrayList<SockClient> clients = new ArrayList<>();
 
     private void addClient(SocketChannel socketChannel) throws IOException {
         iterOverClientAndClean();
-        sockClient client;
-        client = new sockClient(socketChannel);
+        SockClient client;
+        client = new SockClient(socketChannel);
         // No more than 20!
-        if(clients.size() < 20) {
+        if (clients.size() < 20) {
             clients.add(client);
         } else {
             System.out.println("There is no more empty Slots - Retry later.");
@@ -82,14 +80,14 @@ class sockServer {
     }
 
     private void iterOverClientAndClean() {
-        Iterator<sockClient> iter = clients.iterator();
+        Iterator<SockClient> iter = clients.iterator();
         while (iter.hasNext()) {
-            sockClient client = iter.next();
+            SockClient client = iter.next();
             removeEmptyClients(iter, client);
         }
     }
 
-    private void removeEmptyClients(Iterator<sockClient> iter, sockClient sockClient) {
+    private void removeEmptyClients(Iterator<SockClient> iter, SockClient sockClient) {
         if (sockClient.server != null && sockClient.client != null) {
             if (!sockClient.server.isConnected() && !sockClient.client.isConnected()) {
                 iter.remove();
