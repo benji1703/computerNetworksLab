@@ -1,14 +1,7 @@
 # Computer Networks Lab
 
-### Sockpy
- Main method.
-
-### SockServer
-We are using one thread with NIO, listening on the relevant port, and then do relevant manipulation on 
-sockClient.
-
-### SockClient
-This class is in charge of the client connection, message proxy, and error handling.
+In this lab, we implement a limited version of SOCKS v4 (and 4A) proxy server, with an additional feature: grabbing
+usernames and password from HTTP Basic Authentication ( as mentioned in RFC7617 ).
 
 We used ideas and guidance from http://tutorials.jenkov.com/java-nio/index.html
 Since this is the first time we worked with NIO.
